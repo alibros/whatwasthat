@@ -41,10 +41,20 @@ Visit `http://localhost:3000` and start asking about your favorite movies and sh
 ## Examples
 
 Try asking:
+
+**Content Identification:**
 - "Which South Park episode has them playing with toilet rolls?"
-- "What movie has the scene where they're in a diner talking about tipping?"
-- "Which Breaking Bad episode has the pizza on the roof?"
 - "What's the movie where Tom Hanks is stuck on an island?"
+
+**Scene-Specific Queries (automatically includes timestamps):**
+- "The scene where they're in a diner talking about tipping in Pulp Fiction"
+- "The part where Walter throws pizza on the roof in Breaking Bad"
+- "The scene where Harry kills the snake in the second Potter film"
+- "The moment when Neo dodges bullets in The Matrix"
+
+**Explicit Timestamp Requests:**
+- "When does Neo die in The Matrix?"
+- "At what point do they talk about royales with cheese?"
 
 ## API
 

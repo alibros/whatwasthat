@@ -62,7 +62,6 @@
         padding: 0 20px 20px 20px;
       }
       input[type="text"] {
-        width: 100%;
         background: rgba(17,24,39,0.8);
         border: 1px solid rgba(255,255,255,0.1);
         outline: none;
@@ -71,6 +70,7 @@
         font-size: 15px;
         border-radius: 10px;
         transition: border-color .15s, box-shadow .15s;
+        min-width: 0; /* Allows the input to shrink properly in grid */
       }
       input[type="text"]:focus {
         border-color: var(--accent);
@@ -447,21 +447,33 @@
         }
 
         let timestampSection = '';
+        // Only show timestamp section if timestamp was actually requested and we have meaningful info
         if (data.timestamp_success === true && data.timestamp) {
+          // Successfully found timestamp - show it prominently
           timestampSection = `
-            <div class="timestamp-info">
-              <div class="timestamp-label">⏰ Found at timestamp</div>
-              <div class="timestamp-value">${data.timestamp}</div>
+            <div class="timestamp-info" style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(52,211,153,0.15)); border: 2px solid rgba(16,185,129,0.3); padding: 24px; margin-bottom: 32px; border-radius: 16px;">
+              <div class="timestamp-label" style="font-size: 16px; margin-bottom: 8px; text-align: center;">⏰ Found at timestamp</div>
+              <div class="timestamp-value" style="font-size: 36px; font-weight: 800; text-align: center; color: var(--success); text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: 'Courier New', monospace;">${data.timestamp}</div>
             </div>
           `;
-        } else if (data.timestamp_success === false && data.timestamp_error) {
-          timestampSection = `
-            <div class="timestamp-info failed">
-              <div class="timestamp-label">⏰ Timestamp unavailable</div>
-              <div class="timestamp-value">${data.timestamp_error}</div>
-            </div>
-          `;
+        } else if (data.timestamp_success === false && data.timestamp_error && 
+                   data.timestamp_error.trim()) {
+          // Show timestamp error for any meaningful error message
+          const isGenericNoRequest = data.timestamp_error.toLowerCase().includes('no specific moment') || 
+                                    data.timestamp_error.toLowerCase().includes('no timestamp') ||
+                                    data.timestamp_error.toLowerCase().includes('not requested') ||
+                                    data.timestamp_error.toLowerCase().includes('general identification');
+          
+          if (!isGenericNoRequest) {
+            timestampSection = `
+              <div class="timestamp-info failed" style="padding: 20px; margin-bottom: 24px; border-radius: 12px;">
+                <div class="timestamp-label">⏰ Scene identified, timestamp unavailable</div>
+                <div class="timestamp-value" style="font-size: 16px; font-family: inherit;">${data.timestamp_error}</div>
+              </div>
+            `;
+          }
         }
+        // If timestamp_success is null or timestamp_error indicates no timing was requested, show nothing
 
         const posterFallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDEyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjMzc0MTUxIi8+Cjxzdmcgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeD0iMzYiIHk9IjY2Ij4KPHA+dGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxUzcgMTYuOTcwNiA3IDEyIDExLjAyOTQgMyAxNiAzUzIxIDcuMDI5NCAyMSAxMloiIHN0cm9rZT0iIzk0OTNCOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHN2Zz4KPHN2Zz4=';
         const backdropFallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4MCIgaGVpZ2h0PSIzMDAiIHZpZXdCb3g9IjAgMCAxMjgwIDMwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEyODAiIGhlaWdodD0iMzAwIiBmaWxsPSIjMTExODI3Ii8+Cjwvc3ZnPgo=';

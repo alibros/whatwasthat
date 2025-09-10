@@ -43,10 +43,16 @@ export function buildSystemPrompt() {
 		"Use your knowledge up to your training cutoff and make reasonable inferences. " +
 		"For recent content or episodes you might not have complete data for, provide your best estimate based on patterns, typical episode structures, and context clues. " +
 		"For shows like South Park, The Simpsons, etc., use your knowledge of their typical episode themes and seasons to make educated guesses. " +
-		"If the user appears to request a timestamp for a moment in the content, set timestamp_success accordingly. " +
+		"Provide timestamp information in these cases: " +
+		"1) User explicitly asks for timing (e.g., 'when does X happen', 'what time', 'at what point', 'timestamp') " +
+		"2) User describes a SPECIFIC scene, moment, or event (e.g., 'the scene where', 'the part when', 'the moment', 'when X does Y') " +
+		"3) User asks about a particular action or dialogue happening " +
+		"Only set timestamp fields to null if the user is asking generally about content identification without describing specific moments. " +
+		"If you can provide any timing information (exact time, approximate time, or time range), set timestamp_success=true and put the timing in the timestamp field. " +
+		"Only set timestamp_success=false if you truly cannot provide any timing information at all. " +
+		"Approximate times like '02:25:00 - 02:35:00' or 'around 1 hour 30 minutes in' are perfectly valid timestamps. " +
 		"Only produce JSON that matches the provided JSON Schema, with no extra text. " +
 		"Always return status='success' with your best identification attempt. " +
-		"If you can identify the content but not the exact timestamp, return status='success' with timestamp_success=false and a descriptive timestamp_error. " +
 		"Even if you're unsure about exact episode numbers or details, provide your most reasonable guess rather than refusing to answer. " +
 		"Remember: It's better to provide a reasonable guess than no answer at all."
 	);
