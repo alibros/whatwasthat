@@ -348,11 +348,11 @@
           <input id="q" type="text" placeholder="e.g., Which South Park episode has them playing with toilet rolls?" />
           <button id="go">Ask</button>
         </div>
-      </div>
+        </div>
       
       <div id="result-container"></div>
       
-      <div class="footer">
+        <div class="footer">
         Powered by <a href="https://www.themoviedb.org/" target="_blank">TMDB</a> and OpenAI
       </div>
     </div>
@@ -374,9 +374,9 @@
       function showError(message) {
         resultContainer.innerHTML = `
           <div class="error-card">
-            <div class="error-icon">🎬</div>
-            <div class="error-title">Content Not Found</div>
-            <div class="error-message">${message}</div>
+            <div class="error-icon">🤔</div>
+            <div class="error-title">Unable to Identify</div>
+            <div class="error-message">Sorry, I couldn't identify the content from your description. Try being more specific about the scene, characters, or plot details.</div>
           </div>
         `;
       }
@@ -417,16 +417,17 @@
 
         const tmdbData = data.tmdb_data;
         const episodeData = data.episode_data;
-        
-        if (!tmdbData) {
-          showError('Content found but additional details are not available');
-          return;
-        }
 
         const isMovie = data.type === 'movie';
-        const title = isMovie ? tmdbData.title : tmdbData.name;
-        const year = isMovie ? formatDate(tmdbData.release_date) : formatDate(tmdbData.first_air_date);
-        const runtime = isMovie ? formatRuntime(tmdbData.runtime) : '';
+        
+        // Use TMDB data if available, otherwise fall back to OpenAI data
+        const title = tmdbData ? 
+          (isMovie ? tmdbData.title : tmdbData.name) : 
+          (isMovie ? data.movie_title : data.series_title);
+        const year = tmdbData ? 
+          (isMovie ? formatDate(tmdbData.release_date) : formatDate(tmdbData.first_air_date)) : 
+          '';
+        const runtime = tmdbData && isMovie ? formatRuntime(tmdbData.runtime) : '';
         
         let episodeSection = '';
         if (!isMovie && data.season_number && data.episode_number) {
@@ -465,48 +466,63 @@
         const posterFallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDEyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjMzc0MTUxIi8+Cjxzdmcgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeD0iMzYiIHk9IjY2Ij4KPHA+dGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxUzcgMTYuOTcwNiA3IDEyIDExLjAyOTQgMyAxNiAzUzIxIDcuMDI5NCAyMSAxMloiIHN0cm9rZT0iIzk0OTNCOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHN2Zz4KPHN2Zz4=';
         const backdropFallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4MCIgaGVpZ2h0PSIzMDAiIHZpZXdCb3g9IjAgMCAxMjgwIDMwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEyODAiIGhlaWdodD0iMzAwIiBmaWxsPSIjMTExODI3Ii8+Cjwvc3ZnPgo=';
 
+        // Create a warning section if TMDB data is missing
+        let missingDataWarning = '';
+        if (!tmdbData) {
+          missingDataWarning = `
+            <div class="timestamp-info failed" style="margin-bottom: 24px;">
+              <div class="timestamp-label">⚠️ Best Guess Result</div>
+              <div class="timestamp-value" style="font-size: 14px; font-family: inherit;">
+                This identification is our best guess based on your description. Detailed information (images, cast, ratings) is not available, which may indicate lower confidence in the match.
+              </div>
+            </div>
+          `;
+        }
+
         resultContainer.innerHTML = `
           <div class="content-card">
             <div class="content-hero">
-              <img class="backdrop-image" src="${tmdbData.backdrop_path || backdropFallback}" alt="${title}" onerror="this.src='${backdropFallback}'" />
+              <img class="backdrop-image" src="${tmdbData?.backdrop_path || backdropFallback}" alt="${title}" onerror="this.src='${backdropFallback}'" />
               <div class="hero-overlay"></div>
               <div class="hero-content">
-                <img class="poster-image" src="${tmdbData.poster_path || posterFallback}" alt="${title}" onerror="this.src='${posterFallback}'" />
+                <img class="poster-image" src="${tmdbData?.poster_path || posterFallback}" alt="${title}" onerror="this.src='${posterFallback}'" />
                 <div class="hero-info">
                   <h1>${title}</h1>
                   <div class="hero-meta">
                     ${year ? `<span>${year}</span>` : ''}
                     ${runtime ? `<span>${runtime}</span>` : ''}
-                    ${tmdbData.vote_average ? `<div class="rating">⭐ ${tmdbData.vote_average.toFixed(1)}</div>` : ''}
+                    ${tmdbData?.vote_average ? `<div class="rating">⭐ ${tmdbData.vote_average.toFixed(1)}</div>` : ''}
                   </div>
                   <div class="genres">
-                    ${tmdbData.genres?.map(genre => `<span class="genre-tag">${genre}</span>`).join('') || ''}
+                    ${tmdbData?.genres?.map(genre => `<span class="genre-tag">${genre}</span>`).join('') || ''}
                   </div>
                 </div>
               </div>
             </div>
             
             <div class="content-body">
+              ${missingDataWarning}
               ${episodeSection}
               ${timestampSection}
               
-              ${tmdbData.overview ? `<div class="overview">${tmdbData.overview}</div>` : ''}
+              ${tmdbData?.overview ? `<div class="overview">${tmdbData.overview}</div>` : ''}
               
               <div class="details-grid">
                 <div class="detail-section">
                   <h3>Cast</h3>
-                  ${createCastList(tmdbData.cast)}
+                  ${tmdbData ? createCastList(tmdbData.cast) : '<div style="color: var(--muted);">Cast information not available</div>'}
                 </div>
                 
                 <div class="detail-section">
                   <h3>Details</h3>
                   <div style="line-height: 1.8;">
-                    ${isMovie && tmdbData.director ? `<div><strong>Director:</strong> ${tmdbData.director}</div>` : ''}
-                    ${!isMovie && tmdbData.created_by?.length ? `<div><strong>Created by:</strong> ${tmdbData.created_by.join(', ')}</div>` : ''}
-                    ${!isMovie && tmdbData.networks?.length ? `<div><strong>Network:</strong> ${tmdbData.networks.join(', ')}</div>` : ''}
-                    ${!isMovie ? `<div><strong>Seasons:</strong> ${tmdbData.number_of_seasons}</div>` : ''}
-                    ${!isMovie ? `<div><strong>Episodes:</strong> ${tmdbData.number_of_episodes}</div>` : ''}
-                    ${tmdbData.vote_count ? `<div><strong>Votes:</strong> ${tmdbData.vote_count.toLocaleString()}</div>` : ''}
+                    ${isMovie && tmdbData?.director ? `<div><strong>Director:</strong> ${tmdbData.director}</div>` : ''}
+                    ${!isMovie && tmdbData?.created_by?.length ? `<div><strong>Created by:</strong> ${tmdbData.created_by.join(', ')}</div>` : ''}
+                    ${!isMovie && tmdbData?.networks?.length ? `<div><strong>Network:</strong> ${tmdbData.networks.join(', ')}</div>` : ''}
+                    ${!isMovie && tmdbData ? `<div><strong>Seasons:</strong> ${tmdbData.number_of_seasons || 'Unknown'}</div>` : ''}
+                    ${!isMovie && tmdbData ? `<div><strong>Episodes:</strong> ${tmdbData.number_of_episodes || 'Unknown'}</div>` : ''}
+                    ${tmdbData?.vote_count ? `<div><strong>Votes:</strong> ${tmdbData.vote_count.toLocaleString()}</div>` : ''}
+                    ${!tmdbData ? '<div style="color: var(--muted);">Additional details not available</div>' : ''}
                   </div>
                 </div>
               </div>
