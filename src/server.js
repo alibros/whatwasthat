@@ -26,7 +26,12 @@ app.get("/health", (req, res) => {
 	res.json({ status: "ok" });
 });
 
-app.post("/ask", async (req, res) => {
+app.get("/api/health", (req, res) => {
+	res.json({ status: "ok" });
+});
+
+// Handle both /ask and /api/ask for compatibility
+const askHandler = async (req, res) => {
 	try {
 		const { question } = req.body || {};
 		if (!question || typeof question !== "string") {
@@ -51,7 +56,11 @@ app.post("/ask", async (req, res) => {
 		const devMessage = process.env.NODE_ENV === "production" ? "Internal server error" : (err?.message || "Internal server error");
 		return res.status(500).json({ status: "error", error_message: devMessage });
 	}
-});
+};
+
+// Register both routes
+app.post("/ask", askHandler);
+app.post("/api/ask", askHandler);
 
 app.listen(port, () => {
 	console.log(`whatwasthat API listening on port ${port}`);
