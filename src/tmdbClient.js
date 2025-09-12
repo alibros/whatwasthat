@@ -11,7 +11,7 @@ if (!TMDB_API_KEY) {
     console.warn('TMDB_API_KEY not set. TMDB features will not work.');
 }
 
-async function tmdbRequest(endpoint, params = {}) {
+export async function tmdbRequest(endpoint, params = {}) {
     if (!TMDB_API_KEY) {
         throw new Error('TMDB API key not configured');
     }
@@ -38,26 +38,185 @@ export function getImageUrl(path, size = 'w500') {
     return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
 }
 
+// Helper function to clean and extract core title from verbose OpenAI responses
+function generateTitleVariations(title) {
+    const variations = [];
+    
+    // Original title
+    variations.push(title);
+    
+    // Remove content in parentheses (cast info, years, etc.)
+    const withoutParens = title.replace(/\s*\([^)]*\)\s*/g, '').trim();
+    if (withoutParens && withoutParens !== title) {
+        variations.push(withoutParens);
+    }
+    
+    // Remove content after em dash or long dash (additional info)
+    const withoutDash = title.replace(/\s*[—–-]\s*.*$/, '').trim();
+    if (withoutDash && withoutDash !== title && !variations.includes(withoutDash)) {
+        variations.push(withoutDash);
+    }
+    
+    // Remove year patterns at the end
+    const withoutYear = title.replace(/\s*\(\d{4}\)\s*$/, '').trim();
+    if (withoutYear && withoutYear !== title && !variations.includes(withoutYear)) {
+        variations.push(withoutYear);
+    }
+    
+    // Remove "The" prefix as a last resort (for better matching)
+    const withoutThe = title.replace(/^The\s+/i, '').trim();
+    if (withoutThe && withoutThe !== title && !variations.includes(withoutThe)) {
+        variations.push(withoutThe);
+    }
+    
+    // Remove duplicates and empty strings
+    return variations.filter((v, i, arr) => v && arr.indexOf(v) === i);
+}
+
+// Helper function to score search results for relevance
+function scoreMovieResult(result, originalTitle, searchTitle) {
+    let score = 0;
+    
+    // Exact title match gets highest score
+    if (result.title.toLowerCase() === searchTitle.toLowerCase()) {
+        score += 100;
+    }
+    
+    // Partial title match
+    if (result.title.toLowerCase().includes(searchTitle.toLowerCase()) || 
+        searchTitle.toLowerCase().includes(result.title.toLowerCase())) {
+        score += 50;
+    }
+    
+    // Popularity score (vote count and average)
+    score += Math.min(result.vote_count / 100, 20); // Max 20 points for popularity
+    score += result.vote_average * 2; // Max ~20 points for rating
+    
+    // Recency bonus (prefer newer releases for ambiguous matches)
+    if (result.release_date) {
+        const releaseYear = new Date(result.release_date).getFullYear();
+        const currentYear = new Date().getFullYear();
+        if (releaseYear >= currentYear - 5) {
+            score += 10; // Recent release bonus
+        }
+    }
+    
+    return score;
+}
+
 export async function searchMovie(title, year = null) {
     try {
-        const params = { query: title };
-        if (year) params.year = year;
+        const titleVariations = generateTitleVariations(title);
+        let bestResult = null;
+        let bestScore = 0;
         
-        const data = await tmdbRequest('/search/movie', params);
-        return data.results?.[0] || null;
+        for (const searchTitle of titleVariations) {
+            const params = { query: searchTitle };
+            if (year) params.year = year;
+            
+            const data = await tmdbRequest('/search/movie', params);
+            
+            if (data.results && data.results.length > 0) {
+                // Score all results and find the best one
+                for (const result of data.results.slice(0, 5)) { // Only consider top 5 results
+                    const score = scoreMovieResult(result, title, searchTitle);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestResult = result;
+                    }
+                }
+                
+                // If we found a high-confidence match, stop searching
+                if (bestScore >= 100) {
+                    break;
+                }
+            }
+        }
+        
+        return bestResult;
     } catch (error) {
         console.error('TMDB movie search error:', error);
         return null;
     }
 }
 
+// Helper function to score TV show results for relevance
+function scoreTVResult(result, originalTitle, searchTitle) {
+    let score = 0;
+    
+    // Exact title match gets highest score
+    if (result.name.toLowerCase() === searchTitle.toLowerCase()) {
+        score += 100;
+    }
+    
+    // Partial title match
+    if (result.name.toLowerCase().includes(searchTitle.toLowerCase()) || 
+        searchTitle.toLowerCase().includes(result.name.toLowerCase())) {
+        score += 50;
+    }
+    
+    // Popularity score (vote count and average)
+    score += Math.min(result.vote_count / 100, 20); // Max 20 points for popularity
+    score += result.vote_average * 2; // Max ~20 points for rating
+    
+    // Country-specific matching for shows with regional versions
+    if (originalTitle.includes('(UK)') || originalTitle.includes('UK')) {
+        if (result.origin_country?.includes('GB')) {
+            score += 30; // Strong preference for UK version
+        }
+        // Prefer older shows (original versions) for UK requests
+        if (result.first_air_date) {
+            const year = new Date(result.first_air_date).getFullYear();
+            if (year <= 2005) score += 20; // Bonus for older shows
+        }
+    } else if (originalTitle.includes('(US)') || originalTitle.includes('US')) {
+        if (result.origin_country?.includes('US')) {
+            score += 30; // Strong preference for US version
+        }
+    }
+    
+    // General recency bonus for non-country-specific searches
+    if (!originalTitle.includes('(UK)') && !originalTitle.includes('(US)') && result.first_air_date) {
+        const releaseYear = new Date(result.first_air_date).getFullYear();
+        const currentYear = new Date().getFullYear();
+        if (releaseYear >= currentYear - 10) {
+            score += 5; // Small bonus for recent shows
+        }
+    }
+    
+    return score;
+}
+
 export async function searchTVShow(title, year = null) {
     try {
-        const params = { query: title };
-        if (year) params.first_air_date_year = year;
+        const titleVariations = generateTitleVariations(title);
+        let bestResult = null;
+        let bestScore = 0;
         
-        const data = await tmdbRequest('/search/tv', params);
-        return data.results?.[0] || null;
+        for (const searchTitle of titleVariations) {
+            const params = { query: searchTitle };
+            if (year) params.first_air_date_year = year;
+            
+            const data = await tmdbRequest('/search/tv', params);
+            
+            if (data.results && data.results.length > 0) {
+                // Score all results and find the best one
+                for (const result of data.results.slice(0, 10)) { // Consider more TV results due to regional versions
+                    const score = scoreTVResult(result, title, searchTitle);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestResult = result;
+                    }
+                }
+                
+                // If we found a high-confidence match, stop searching
+                if (bestScore >= 100) {
+                    break;
+                }
+            }
+        }
+        
+        return bestResult;
     } catch (error) {
         console.error('TMDB TV search error:', error);
         return null;

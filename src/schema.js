@@ -23,8 +23,7 @@ export const responseSchema = {
 			timestamp: {
 				type: ["string", "null"],
 				description:
-					"Timestamp in HH:MM:SS or MM:SS. If only approximate is known, give best estimate in this format.",
-				pattern: "^(?:\\d{2}:)?[0-5]?\\d:[0-5]\\d$"
+					"Timestamp in HH:MM:SS, MM:SS, or range format (e.g., '02:25:00 - 02:35:00'). Approximate times are acceptable.",
 			},
 			timestamp_error: { type: ["string", "null"], description: "Present when timestamp_success is false, else null" }
 		},
@@ -49,6 +48,7 @@ export function buildSystemPrompt() {
 		"3) User asks about a particular action or dialogue happening " +
 		"Only set timestamp fields to null if the user is asking generally about content identification without describing specific moments. " +
 		"If you can provide any timing information (exact time, approximate time, or time range), set timestamp_success=true and put the timing in the timestamp field. " +
+		"ALWAYS provide additional context in the timestamp_error field explaining the scene timing, even when successful (e.g., 'The scene occurs near the film's end shortly after the Chamber climax, depending on the version/cut'). " +
 		"Only set timestamp_success=false if you truly cannot provide any timing information at all. " +
 		"Approximate times like '02:25:00 - 02:35:00' or 'around 1 hour 30 minutes in' are perfectly valid timestamps. " +
 		"Only produce JSON that matches the provided JSON Schema, with no extra text. " +

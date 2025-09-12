@@ -342,7 +342,7 @@
       <div class="search-card">
         <header>
           <h2 class="title">WhatWasThat</h2>
-          <p class="subtitle">Ask about a movie or TV scene and discover detailed information with beautiful visuals.</p>
+          <p class="subtitle">Find the film or TV show you can't quite remember the name of, or a specific scene in a film.</p>
         </header>
         <div class="search-row">
           <input id="q" type="text" placeholder="e.g., Which South Park episode has them playing with toilet rolls?" />
@@ -396,11 +396,25 @@
       function createCastList(cast) {
         if (!cast || cast.length === 0) return '<div style="color: var(--muted);">Cast information not available</div>';
         
+        const avatarFallback = 'data:image/svg+xml;base64,' + btoa(`
+          <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4b5563;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <circle cx="30" cy="30" r="30" fill="url(#avatarGrad)"/>
+            <circle cx="30" cy="22" r="8" fill="#6b7280" opacity="0.8"/>
+            <path d="M15 45 C15 35, 22 32, 30 32 C38 32, 45 35, 45 45" fill="#6b7280" opacity="0.8"/>
+          </svg>
+        `);
+        
         return `
           <div class="cast-list">
             ${cast.map(member => `
               <div class="cast-member">
-                <img class="cast-avatar" src="${member.profile_path || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiMzNzQxNTEiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIxOCIgeT0iMTgiPgo8cGF0aCBkPSJNMTIgMTJDMTQuMjA5MSAxMiAxNiAxMC4yMDkxIDE2IDhDMTYgNS43OTA5IDE0LjIwOTEgNCAxMiA0QzkuNzkwODYgNCA4IDUuNzkwOSA4IDhDOCAxMC4yMDkxIDkuNzkwODYgMTIgMTIgMTJaIiBmaWxsPSIjOTQ5M0I4Ii8+CjxwYXRoIGQ9Ik0xMiAxNEM5LjMzIDEzLjk5IDcuMTEgMTYuMTIgNyAxOC44OFYyMEgxN1YxOC44OEMxNi44OSAxNi4xMiAxNC42NyAxMy45OSAxMiAxNFoiIGZpbGw9IiM5NDkzQjgiLz4KPHN2Zz4KPHN2Zz4='}" alt="${member.name}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiMzNzQxNTEiLz4KPHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4PSIxOCIgeT0iMTgiPgo8cGF0aCBkPSJNMTIgMTJDMTQuMjA5MSAxMiAxNiAxMC4yMDkxIDE2IDhDMTYgNS43OTA5IDE0LjIwOTEgNCAxMiA0QzkuNzkwODYgNCA4IDUuNzkwOSA4IDhDOCAxMC4yMDkxIDkuNzkwODYgMTIgMTIgMTJaIiBmaWxsPSIjOTQ5M0I4Ii8+CjxwYXRoIGQ9Ik0xMiAxNEM5LjMzIDEzLjk5IDcuMTEgMTYuMTIgNyAxOC44OFYyMEgxN1YxOC44OEMxNi44OSAxNi4xMiAxNC42NyAxMy45OSAxMiAxNFoiIGZpbGw9IiM5NDkzQjgiLz4KPHN2Zz4KPHN2Zz4='" />
+                <img class="cast-avatar" src="${member.profile_path || avatarFallback}" alt="${member.name}" onerror="this.src='${avatarFallback}'" />
                 <div class="cast-name">${member.name}</div>
                 <div class="cast-character">${member.character}</div>
               </div>
@@ -447,36 +461,83 @@
         }
 
         let timestampSection = '';
-        // Only show timestamp section if timestamp was actually requested and we have meaningful info
+        // Check if we have any timing information to display
+        const hasTimingInfo = data.timestamp_success === true || 
+                             (data.timestamp_success === false && data.timestamp_error && 
+                              data.timestamp_error.trim() && 
+                              !data.timestamp_error.toLowerCase().includes('no specific moment') && 
+                              !data.timestamp_error.toLowerCase().includes('no timestamp') &&
+                              !data.timestamp_error.toLowerCase().includes('not requested') &&
+                              !data.timestamp_error.toLowerCase().includes('general identification'));
+
         if (data.timestamp_success === true && data.timestamp) {
-          // Successfully found timestamp - show it prominently
+          // Successfully found timestamp - show it prominently with explanation
+          let explanationText = '';
+          
+          // Check for explanation in timestamp_error field (even when successful)
+          if (data.timestamp_error && data.timestamp_error.trim()) {
+            explanationText = `<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 14px; line-height: 1.6; color: var(--text); text-align: left;">${data.timestamp_error}</div>`;
+          }
+          
           timestampSection = `
             <div class="timestamp-info" style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(52,211,153,0.15)); border: 2px solid rgba(16,185,129,0.3); padding: 24px; margin-bottom: 32px; border-radius: 16px;">
               <div class="timestamp-label" style="font-size: 16px; margin-bottom: 8px; text-align: center;">⏰ Found at timestamp</div>
               <div class="timestamp-value" style="font-size: 36px; font-weight: 800; text-align: center; color: var(--success); text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: 'Courier New', monospace;">${data.timestamp}</div>
+              ${explanationText}
             </div>
           `;
-        } else if (data.timestamp_success === false && data.timestamp_error && 
-                   data.timestamp_error.trim()) {
-          // Show timestamp error for any meaningful error message
-          const isGenericNoRequest = data.timestamp_error.toLowerCase().includes('no specific moment') || 
-                                    data.timestamp_error.toLowerCase().includes('no timestamp') ||
-                                    data.timestamp_error.toLowerCase().includes('not requested') ||
-                                    data.timestamp_error.toLowerCase().includes('general identification');
+        } else if (hasTimingInfo) {
+          // Show detailed timing explanation even if marked as "unsuccessful"
+          // Extract any time-like patterns from the error message for highlighting
+          const timePattern = /(\d{1,2}:\d{2}:\d{2}|\d{1,2}:\d{2}|\d+ hours? \d+ minutes?|\d+ minutes?)/gi;
+          const hasTimeInError = timePattern.test(data.timestamp_error);
           
-          if (!isGenericNoRequest) {
-            timestampSection = `
-              <div class="timestamp-info failed" style="padding: 20px; margin-bottom: 24px; border-radius: 12px;">
-                <div class="timestamp-label">⏰ Scene identified, timestamp unavailable</div>
-                <div class="timestamp-value" style="font-size: 16px; font-family: inherit;">${data.timestamp_error}</div>
-              </div>
-            `;
-          }
+          timestampSection = `
+            <div class="timestamp-info" style="background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.15)); border: 2px solid rgba(245,158,11,0.3); padding: 24px; margin-bottom: 32px; border-radius: 16px;">
+              <div class="timestamp-label" style="font-size: 16px; margin-bottom: 8px; text-align: center; color: var(--accent-3);">⏰ Scene timing information</div>
+              <div class="timestamp-value" style="font-size: 16px; font-family: inherit; line-height: 1.6; text-align: center;">${data.timestamp_error}</div>
+              ${hasTimeInError ? '<div style="margin-top: 8px; font-size: 12px; color: var(--muted); text-align: center;">Approximate timing detected above</div>' : ''}
+            </div>
+          `;
         }
         // If timestamp_success is null or timestamp_error indicates no timing was requested, show nothing
 
-        const posterFallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjE4MCIgdmlld0JveD0iMCAwIDEyMCAxODAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTgwIiBmaWxsPSIjMzc0MTUxIi8+Cjxzdmcgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeD0iMzYiIHk9IjY2Ij4KPHA+dGggZD0iTTkgMTJMMTEgMTRMMTUgMTBNMjEgMTJDMjEgMTYuOTcwNiAxNi45NzA2IDIxIDEyIDIxUzcgMTYuOTcwNiA3IDEyIDExLjAyOTQgMyAxNiAzUzIxIDcuMDI5NCAyMSAxMloiIHN0cm9rZT0iIzk0OTNCOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPHN2Zz4KPHN2Zz4=';
-        const backdropFallback = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4MCIgaGVpZ2h0PSIzMDAiIHZpZXdCb3g9IjAgMCAxMjgwIDMwMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjEyODAiIGhlaWdodD0iMzAwIiBmaWxsPSIjMTExODI3Ii8+Cjwvc3ZnPgo=';
+        // Beautiful minimal SVG placeholders
+        const posterFallback = 'data:image/svg+xml;base64,' + btoa(`
+          <svg width="120" height="180" viewBox="0 0 120 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="posterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#374151;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <rect width="120" height="180" fill="url(#posterGrad)" rx="6"/>
+            <circle cx="60" cy="70" r="20" fill="#4b5563" opacity="0.6"/>
+            <rect x="35" y="100" width="50" height="4" rx="2" fill="#4b5563" opacity="0.4"/>
+            <rect x="40" y="110" width="40" height="3" rx="1.5" fill="#4b5563" opacity="0.3"/>
+            <rect x="45" y="120" width="30" height="3" rx="1.5" fill="#4b5563" opacity="0.2"/>
+            <path d="M50 65 L55 70 L70 55" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
+          </svg>
+        `);
+        
+        const backdropFallback = 'data:image/svg+xml;base64,' + btoa(`
+          <svg width="1280" height="300" viewBox="0 0 1280 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="backdropGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#111827;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+              </linearGradient>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#374151" stroke-width="0.5" opacity="0.1"/>
+              </pattern>
+            </defs>
+            <rect width="1280" height="300" fill="url(#backdropGrad)"/>
+            <rect width="1280" height="300" fill="url(#grid)"/>
+            <circle cx="640" cy="150" r="40" fill="#374151" opacity="0.3"/>
+            <path d="M620 135 L630 145 L660 115" stroke="#4b5563" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.4"/>
+          </svg>
+        `);
 
         // Create a warning section if TMDB data is missing
         let missingDataWarning = '';
