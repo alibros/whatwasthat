@@ -1,0 +1,36 @@
+# Environment files
+.env
+.env.local
+.env.example
+
+# Development files
+src/server.js
+test.js
+debug_*.js
+
+# Node modules (Vercel handles this)
+node_modules/
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock

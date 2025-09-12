@@ -56,9 +56,43 @@ Try asking:
 - "When does Neo die in The Matrix?"
 - "At what point do they talk about royales with cheese?"
 
+## Deployment
+
+### Vercel Deployment
+
+This app is configured for easy deployment on Vercel:
+
+1. **Install Vercel CLI** (optional):
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Deploy**:
+   ```bash
+   vercel --prod
+   ```
+   Or connect your GitHub repo to Vercel for automatic deployments.
+
+3. **Set Environment Variables** in Vercel dashboard:
+   - `OPENAI_API_KEY`: Your OpenAI API key
+   - `OPENAI_BASE_URL`: Your OpenAI endpoint (if using Azure)
+   - `OPENAI_MODEL`: Your preferred model (e.g., gpt-4o-mini)
+   - `TMDB_API_KEY`: Your TMDB API key
+   - `NODE_ENV`: production
+
+### Local Development
+
+```bash
+npm install
+npm run dev
+```
+
 ## API
 
-The application provides a `/ask` endpoint that accepts POST requests:
+The application provides API endpoints:
+
+- **POST `/api/ask`**: Main content identification endpoint
+- **GET `/api/health`**: Health check endpoint
 
 ```json
 {
