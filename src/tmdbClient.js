@@ -4,20 +4,23 @@
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
-// You'll need to set this environment variable or replace with your API key
-const TMDB_API_KEY ="9446486c74568b60ef57318d997b367a"//process.env.TMDB_API_KEY;
-
-if (!TMDB_API_KEY) {
-    console.warn('TMDB_API_KEY not set. TMDB features will not work.');
+// Lazy getter for TMDB API key to ensure environment variables are loaded
+function getTMDBApiKey() {
+    const key = process.env.TMDB_API_KEY;
+    if (!key) {
+        console.warn('TMDB_API_KEY not set. TMDB features will not work.');
+    }
+    return key;
 }
 
 export async function tmdbRequest(endpoint, params = {}) {
-    if (!TMDB_API_KEY) {
+    const apiKey = getTMDBApiKey();
+    if (!apiKey) {
         throw new Error('TMDB API key not configured');
     }
 
     const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
-    url.searchParams.set('api_key', TMDB_API_KEY);
+    url.searchParams.set('api_key', apiKey);
     
     Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {

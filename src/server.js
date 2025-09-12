@@ -1,5 +1,18 @@
+// Load environment variables FIRST, before any other imports
+import dotenv from "dotenv";
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Get the directory of the current module (src/)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load .env from the project root (one level up from src/)
+// Use override: true to override existing environment variables (like those in ~/.zshrc)
+const envPath = join(__dirname, '..', '.env');
+dotenv.config({ path: envPath, override: true });
+
 import express from "express";
-import "dotenv/config";
 import { askModelForMediaLookup } from "./openaiClient.js";
 import { enrichMediaData } from "./tmdbClient.js";
 
