@@ -12,7 +12,15 @@ A beautiful web application that helps you identify movies and TV shows from des
 
 ## Setup
 
-### 1. Get a TMDB API Key
+### 1. Get an OpenAI API Key
+
+1. Sign in to the [OpenAI dashboard](https://platform.openai.com/)
+2. Create an API key (or retrieve an existing one)
+3. Copy the key — you'll add it to your environment shortly
+
+If you're using Azure OpenAI or a proxy endpoint, also note the base URL and model deployment name you'll need to target.
+
+### 2. Get a TMDB API Key
 
 1. Go to [TMDB](https://www.themoviedb.org/)
 2. Create a free account
@@ -20,16 +28,23 @@ A beautiful web application that helps you identify movies and TV shows from des
 4. Request an API Key (choose "Developer")
 5. Copy your API key
 
-### 2. Configure Environment
+### 3. Configure Environment
 
 Create a `.env` file in the project root:
 
 ```bash
+OPENAI_API_KEY=your_openai_api_key_here
+# Optional: set if you're using Azure OpenAI or a proxy endpoint
+OPENAI_BASE_URL=https://api.openai.com/v1
+# Optional: override the default model (defaults to gpt-4o-mini)
+OPENAI_MODEL=gpt-4o-mini
 TMDB_API_KEY=your_tmdb_api_key_here
 PORT=3000
 ```
 
-### 3. Install and Run
+If you're using the default OpenAI API (`api.openai.com`), you can remove `OPENAI_BASE_URL` or leave it empty. The `OPENAI_MODEL` variable lets you pick a preferred model; omit it to fall back to the default.
+
+### 4. Install and Run
 
 ```bash
 npm install
