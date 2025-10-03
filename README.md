@@ -10,6 +10,8 @@ A beautiful web application that helps you identify movies and TV shows from des
 - 📺 **Comprehensive Details**: Ratings, cast, crew, genres, and plot summaries
 - 📱 **Responsive Design**: Works perfectly on desktop and mobile
 
+![WhatWasThat interface showing Lord of the Rings example](./wwt-lotr.png)
+
 ## Setup
 
 ### 1. Get an OpenAI API Key
