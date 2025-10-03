@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WhatWasThat · Ask</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --card: #111827;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --accent: #60a5fa;
+        --accent-2: #34d399;
+        --accent-3: #f59e0b;
+        --ring: rgba(96,165,250,0.4);
+        --success: #10b981;
+        --error: #ef4444;
+      }
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: radial-gradient(1200px 800px at 20% 10%, #0b1023 0%, var(--bg) 60%);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+        min-height: 100vh;
+      }
+      
+      /* Search Card */
+      .search-card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        overflow: hidden;
+        backdrop-filter: blur(6px);
+        margin-bottom: 32px;
+      }
+      .search-card header {
+        padding: 20px 20px 0 20px;
+      }
+      .title {
+        margin: 0 0 6px 0;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        font-size: 24px;
+      }
+      .subtitle {
+        margin: 0 0 14px 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .search-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 0 20px 20px 20px;
+      }
+      input[type="text"] {
+        background: rgba(17,24,39,0.8);
+        border: 1px solid rgba(255,255,255,0.1);
+        outline: none;
+        padding: 14px 14px;
+        color: var(--text);
+        font-size: 15px;
+        border-radius: 10px;
+        transition: border-color .15s, box-shadow .15s;
+        min-width: 0; /* Allows the input to shrink properly in grid */
+      }
+      input[type="text"]:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px var(--ring);
+      }
+      button {
+        background: linear-gradient(180deg, var(--accent), #3b82f6);
+        border: 0;
+        color: white;
+        padding: 0 18px;
+        border-radius: 10px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        transition: transform .05s ease, filter .2s ease;
+      }
+      button:active { transform: translateY(1px); }
+      button[disabled] { opacity: 0.7; cursor: progress; }
+
+      /* Content Cards */
+      .content-card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        backdrop-filter: blur(10px);
+        position: relative;
+      }
+      
+      .content-hero {
+        position: relative;
+        height: 300px;
+        overflow: hidden;
+      }
+      .backdrop-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(0.4);
+      }
+      .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, transparent 0%, rgba(15,23,42,0.8) 100%);
+      }
+      .hero-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 20px;
+        align-items: end;
+      }
+      .poster-image {
+        width: 120px;
+        height: 180px;
+        border-radius: 12px;
+        object-fit: cover;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        border: 2px solid rgba(255,255,255,0.1);
+      }
+      .hero-info h1 {
+        margin: 0 0 8px 0;
+        font-size: 28px;
+        font-weight: 800;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      }
+      .hero-meta {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .rating {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--accent-3);
+        font-weight: 600;
+      }
+      .genres {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .genre-tag {
+        background: rgba(96,165,250,0.2);
+        color: var(--accent);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .content-body {
+        padding: 24px;
+      }
+      .overview {
+        margin: 0 0 24px 0;
+        line-height: 1.6;
+        color: var(--text);
+      }
+      
+      .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+      .detail-section h3 {
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .cast-list {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+      }
+      .cast-member {
+        text-align: center;
+        min-width: 80px;
+      }
+      .cast-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(255,255,255,0.1);
+        margin-bottom: 8px;
+      }
+      .cast-name {
+        font-size: 12px;
+        font-weight: 500;
+        margin-bottom: 2px;
+      }
+      .cast-character {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .episode-info {
+        background: rgba(17,24,39,0.6);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      .episode-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--accent-2);
+      }
+      .episode-meta {
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+
+      .timestamp-info {
+        background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(52,211,153,0.1));
+        border: 1px solid rgba(16,185,129,0.2);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+      .timestamp-info.failed {
+        background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(248,113,113,0.1));
+        border: 1px solid rgba(239,68,68,0.2);
+      }
+      .timestamp-label {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--success);
+      }
+      .timestamp-info.failed .timestamp-label {
+        color: var(--error);
+      }
+      .timestamp-value {
+        font-size: 20px;
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+      }
+
+      .error-card {
+        background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(248,113,113,0.05));
+        border: 1px solid rgba(239,68,68,0.2);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+      }
+      .error-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+      .error-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--error);
+      }
+      .error-message {
+        color: var(--muted);
+      }
+
+      .loading-card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 48px 24px;
+        text-align: center;
+      }
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(96,165,250,0.3);
+        border-top: 3px solid var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .footer {
+        text-align: center;
+        padding: 20px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .footer a { 
+        color: var(--accent-2); 
+        text-decoration: none; 
+      }
+      
+      /* Responsive */
+      @media (max-width: 768px) {
+        .hero-content {
+          grid-template-columns: 80px 1fr;
+          gap: 16px;
+        }
+        .poster-image {
+          width: 80px;
+          height: 120px;
+        }
+        .hero-info h1 {
+          font-size: 20px;
+        }
+        .details-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="search-card">
+        <header>
+          <h2 class="title">WhatWasThat</h2>
+          <p class="subtitle">Find the film or TV show you can't quite remember the name of, or a specific scene in a film.</p>
+        </header>
+        <div class="search-row">
+          <input id="q" type="text" placeholder="e.g., Which South Park episode has them playing with toilet rolls?" />
+          <button id="go">Ask</button>
+        </div>
+        </div>
+      
+      <div id="result-container"></div>
+      
+        <div class="footer">
+        Powered by <a href="https://www.themoviedb.org/" target="_blank">TMDB</a> and OpenAI
+      </div>
+    </div>
+
+    <script>
+      const input = document.getElementById('q');
+      const button = document.getElementById('go');
+      const resultContainer = document.getElementById('result-container');
+
+      function showLoading() {
+        resultContainer.innerHTML = `
+          <div class="loading-card">
+            <div class="loading-spinner"></div>
+            <div>Searching for your content...</div>
+          </div>
+        `;
+      }
+
+      function showError(message) {
+        resultContainer.innerHTML = `
+          <div class="error-card">
+            <div class="error-icon">🤔</div>
+            <div class="error-title">Unable to Identify</div>
+            <div class="error-message">Sorry, I couldn't identify the content from your description. Try being more specific about the scene, characters, or plot details.</div>
+          </div>
+        `;
+      }
+
+      function formatRuntime(minutes) {
+        if (!minutes) return '';
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      }
+
+      function formatDate(dateString) {
+        if (!dateString) return '';
+        return new Date(dateString).getFullYear();
+      }
+
+      function createCastList(cast) {
+        if (!cast || cast.length === 0) return '<div style="color: var(--muted);">Cast information not available</div>';
+        
+        const avatarFallback = 'data:image/svg+xml;base64,' + btoa(`
+          <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4b5563;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#374151;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <circle cx="30" cy="30" r="30" fill="url(#avatarGrad)"/>
+            <circle cx="30" cy="22" r="8" fill="#6b7280" opacity="0.8"/>
+            <path d="M15 45 C15 35, 22 32, 30 32 C38 32, 45 35, 45 45" fill="#6b7280" opacity="0.8"/>
+          </svg>
+        `);
+        
+        return `
+          <div class="cast-list">
+            ${cast.map(member => `
+              <div class="cast-member">
+                <img class="cast-avatar" src="${member.profile_path || avatarFallback}" alt="${member.name}" onerror="this.src='${avatarFallback}'" />
+                <div class="cast-name">${member.name}</div>
+                <div class="cast-character">${member.character}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      function showContent(data) {
+        if (data.status === 'error') {
+          showError(data.error_message);
+          return;
+        }
+
+        const tmdbData = data.tmdb_data;
+        const episodeData = data.episode_data;
+
+        const isMovie = data.type === 'movie';
+        
+        // Use TMDB data if available, otherwise fall back to OpenAI data
+        const title = tmdbData ? 
+          (isMovie ? tmdbData.title : tmdbData.name) : 
+          (isMovie ? data.movie_title : data.series_title);
+        const year = tmdbData ? 
+          (isMovie ? formatDate(tmdbData.release_date) : formatDate(tmdbData.first_air_date)) : 
+          '';
+        const runtime = tmdbData && isMovie ? formatRuntime(tmdbData.runtime) : '';
+        
+        let episodeSection = '';
+        if (!isMovie && data.season_number && data.episode_number) {
+          episodeSection = `
+            <div class="episode-info">
+              <div class="episode-title">
+                ${data.episode_title || `Season ${data.season_number}, Episode ${data.episode_number}`}
+              </div>
+              <div class="episode-meta">
+                Season ${data.season_number} • Episode ${data.episode_number}
+                ${episodeData?.air_date ? ` • ${formatDate(episodeData.air_date)}` : ''}
+                ${episodeData?.runtime ? ` • ${formatRuntime(episodeData.runtime)}` : ''}
+              </div>
+              ${episodeData?.overview ? `<div style="margin-top: 12px; line-height: 1.5;">${episodeData.overview}</div>` : ''}
+            </div>
+          `;
+        }
+
+        let timestampSection = '';
+        // Check if we have any timing information to display
+        const hasTimingInfo = data.timestamp_success === true || 
+                             (data.timestamp_success === false && data.timestamp_error && 
+                              data.timestamp_error.trim() && 
+                              !data.timestamp_error.toLowerCase().includes('no specific moment') && 
+                              !data.timestamp_error.toLowerCase().includes('no timestamp') &&
+                              !data.timestamp_error.toLowerCase().includes('not requested') &&
+                              !data.timestamp_error.toLowerCase().includes('general identification'));
+
+        if (data.timestamp_success === true && data.timestamp) {
+          // Successfully found timestamp - show it prominently with explanation
+          let explanationText = '';
+          
+          // Check for explanation in timestamp_error field (even when successful)
+          if (data.timestamp_error && data.timestamp_error.trim()) {
+            explanationText = `<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 14px; line-height: 1.6; color: var(--text); text-align: left;">${data.timestamp_error}</div>`;
+          }
+          
+          timestampSection = `
+            <div class="timestamp-info" style="background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(52,211,153,0.15)); border: 2px solid rgba(16,185,129,0.3); padding: 24px; margin-bottom: 32px; border-radius: 16px;">
+              <div class="timestamp-label" style="font-size: 16px; margin-bottom: 8px; text-align: center;">⏰ Found at timestamp</div>
+              <div class="timestamp-value" style="font-size: 36px; font-weight: 800; text-align: center; color: var(--success); text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: 'Courier New', monospace;">${data.timestamp}</div>
+              ${explanationText}
+            </div>
+          `;
+        } else if (hasTimingInfo) {
+          // Show detailed timing explanation even if marked as "unsuccessful"
+          // Extract any time-like patterns from the error message for highlighting
+          const timePattern = /(\d{1,2}:\d{2}:\d{2}|\d{1,2}:\d{2}|\d+ hours? \d+ minutes?|\d+ minutes?)/gi;
+          const hasTimeInError = timePattern.test(data.timestamp_error);
+          
+          timestampSection = `
+            <div class="timestamp-info" style="background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.15)); border: 2px solid rgba(245,158,11,0.3); padding: 24px; margin-bottom: 32px; border-radius: 16px;">
+              <div class="timestamp-label" style="font-size: 16px; margin-bottom: 8px; text-align: center; color: var(--accent-3);">⏰ Scene timing information</div>
+              <div class="timestamp-value" style="font-size: 16px; font-family: inherit; line-height: 1.6; text-align: center;">${data.timestamp_error}</div>
+              ${hasTimeInError ? '<div style="margin-top: 8px; font-size: 12px; color: var(--muted); text-align: center;">Approximate timing detected above</div>' : ''}
+            </div>
+          `;
+        }
+        // If timestamp_success is null or timestamp_error indicates no timing was requested, show nothing
+
+        // Beautiful minimal SVG placeholders
+        const posterFallback = 'data:image/svg+xml;base64,' + btoa(`
+          <svg width="120" height="180" viewBox="0 0 120 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="posterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#374151;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#1f2937;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <rect width="120" height="180" fill="url(#posterGrad)" rx="6"/>
+            <circle cx="60" cy="70" r="20" fill="#4b5563" opacity="0.6"/>
+            <rect x="35" y="100" width="50" height="4" rx="2" fill="#4b5563" opacity="0.4"/>
+            <rect x="40" y="110" width="40" height="3" rx="1.5" fill="#4b5563" opacity="0.3"/>
+            <rect x="45" y="120" width="30" height="3" rx="1.5" fill="#4b5563" opacity="0.2"/>
+            <path d="M50 65 L55 70 L70 55" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.5"/>
+          </svg>
+        `);
+        
+        const backdropFallback = 'data:image/svg+xml;base64,' + btoa(`
+          <svg width="1280" height="300" viewBox="0 0 1280 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="backdropGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#111827;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+              </linearGradient>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#374151" stroke-width="0.5" opacity="0.1"/>
+              </pattern>
+            </defs>
+            <rect width="1280" height="300" fill="url(#backdropGrad)"/>
+            <rect width="1280" height="300" fill="url(#grid)"/>
+            <circle cx="640" cy="150" r="40" fill="#374151" opacity="0.3"/>
+            <path d="M620 135 L630 145 L660 115" stroke="#4b5563" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.4"/>
+          </svg>
+        `);
+
+        // Create a warning section if TMDB data is missing
+        let missingDataWarning = '';
+        if (!tmdbData) {
+          missingDataWarning = `
+            <div class="timestamp-info failed" style="margin-bottom: 24px;">
+              <div class="timestamp-label">⚠️ Best Guess Result</div>
+              <div class="timestamp-value" style="font-size: 14px; font-family: inherit;">
+                This identification is our best guess based on your description. Detailed information (images, cast, ratings) is not available, which may indicate lower confidence in the match.
+              </div>
+            </div>
+          `;
+        }
+
+        resultContainer.innerHTML = `
+          <div class="content-card">
+            <div class="content-hero">
+              <img class="backdrop-image" src="${tmdbData?.backdrop_path || backdropFallback}" alt="${title}" onerror="this.src='${backdropFallback}'" />
+              <div class="hero-overlay"></div>
+              <div class="hero-content">
+                <img class="poster-image" src="${tmdbData?.poster_path || posterFallback}" alt="${title}" onerror="this.src='${posterFallback}'" />
+                <div class="hero-info">
+                  <h1>${title}</h1>
+                  <div class="hero-meta">
+                    ${year ? `<span>${year}</span>` : ''}
+                    ${runtime ? `<span>${runtime}</span>` : ''}
+                    ${tmdbData?.vote_average ? `<div class="rating">⭐ ${tmdbData.vote_average.toFixed(1)}</div>` : ''}
+                  </div>
+                  <div class="genres">
+                    ${tmdbData?.genres?.map(genre => `<span class="genre-tag">${genre}</span>`).join('') || ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="content-body">
+              ${missingDataWarning}
+              ${episodeSection}
+              ${timestampSection}
+              
+              ${tmdbData?.overview ? `<div class="overview">${tmdbData.overview}</div>` : ''}
+              
+              <div class="details-grid">
+                <div class="detail-section">
+                  <h3>Cast</h3>
+                  ${tmdbData ? createCastList(tmdbData.cast) : '<div style="color: var(--muted);">Cast information not available</div>'}
+                </div>
+                
+                <div class="detail-section">
+                  <h3>Details</h3>
+                  <div style="line-height: 1.8;">
+                    ${isMovie && tmdbData?.director ? `<div><strong>Director:</strong> ${tmdbData.director}</div>` : ''}
+                    ${!isMovie && tmdbData?.created_by?.length ? `<div><strong>Created by:</strong> ${tmdbData.created_by.join(', ')}</div>` : ''}
+                    ${!isMovie && tmdbData?.networks?.length ? `<div><strong>Network:</strong> ${tmdbData.networks.join(', ')}</div>` : ''}
+                    ${!isMovie && tmdbData ? `<div><strong>Seasons:</strong> ${tmdbData.number_of_seasons || 'Unknown'}</div>` : ''}
+                    ${!isMovie && tmdbData ? `<div><strong>Episodes:</strong> ${tmdbData.number_of_episodes || 'Unknown'}</div>` : ''}
+                    ${tmdbData?.vote_count ? `<div><strong>Votes:</strong> ${tmdbData.vote_count.toLocaleString()}</div>` : ''}
+                    ${!tmdbData ? '<div style="color: var(--muted);">Additional details not available</div>' : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      async function ask() {
+        const question = input.value.trim();
+        if (!question) return;
+        
+        button.disabled = true;
+        showLoading();
+        
+        try {
+          const res = await fetch('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+          });
+          const json = await res.json();
+          showContent(json);
+        } catch (err) {
+          showError('Network error - please try again');
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') ask();
+      });
+      button.addEventListener('click', ask);
+      input.focus();
+    </script>
+  </body>
+  </html>
+
+
+

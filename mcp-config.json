@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "whatwasthat": {
+      "command": "node",
+      "args": ["mcp-server.js"],
+      "cwd": ".",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
